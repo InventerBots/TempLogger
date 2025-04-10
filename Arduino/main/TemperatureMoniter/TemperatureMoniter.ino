@@ -13,9 +13,9 @@
 
 #define ENABLE_SERIAL false
 
-float analogCh1_ofset = 0;
-float analogCh2_ofset = 0;
-float analogCh3_ofset = 0;
+float analogCh1_ofset = 1.01;
+float analogCh2_ofset = 1.01;
+float analogCh3_ofset = 1.01;
 
 int analogNC = -50;
 
@@ -110,8 +110,8 @@ void loop() {
 
   sysTime = millis();
 
-  float ntcCh1 = convertTemp_F(analogRead(A0)) + analogCh2_ofset;
-  float ntcCh2 = convertTemp_F(analogRead(A1)) + analogCh1_ofset;
+  float ntcCh1 = convertTemp_F(analogRead(A0)*analogCh2_ofset);
+  float ntcCh2 = convertTemp_F(analogRead(A1)*analogCh1_ofset);
   if (ntcCh1 > analogNC) {
     l3_text+=String(ntcCh1);
   } else {
