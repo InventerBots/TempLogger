@@ -4,7 +4,7 @@ import json
 import time
 
 # Config
-ARDUINO_IP = "PicoW"#"10.32.3.36"
+ARDUINO_IP = "10.32.3.36"#"10.32.3.36"
 TCP_PORT = 6000
 UDP_PORT = 5000
 BUFFER_SIZE = 1024
@@ -90,6 +90,11 @@ def main():
     tcp_sock.sendall(b"START_STREAM\n")
     print("[TCP] Sent START_STREAM")
 
+    return tcp_sock
+
+if __name__ == "__main__":
+    tcp_sock = main()
+
     try:
         while True:
             time.sleep(1)
@@ -99,6 +104,3 @@ def main():
         tcp_sock.close()
         running = False
         print("[TCP] Connection closed")
-
-if __name__ == "__main__":
-    main()
