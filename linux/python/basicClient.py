@@ -21,6 +21,8 @@ jitters = []
 def udp_listener():
     global prev_receive_time, prev_arduino_time
 
+    diag_len = 1000
+
     udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_sock.bind(('', UDP_PORT))
 
@@ -68,7 +70,7 @@ def udp_listener():
             print(f"[UDP] Value: {analog_value} | Latency: {latency:.1f} ms | Jitter: {jitter:.1f} ms | Avg Latency: {avg_latency:.1f} | Avg Jitter: {avg_jitter:.1f}")
 
             # Limit the size of average lists to avoid memory issues
-            if len(latencies) > 1000:
+            if len(latencies) > diag_len or len(jitters) > diag_len:
                 latencies.pop(0)
                 jitters.pop(0)
 
