@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Python script
-COPY basicClient.py .
+COPY main.py .
 
 # Command to run the Python script
-CMD ["python", "basicClient.py"]
+CMD ["python", "main.py"]
