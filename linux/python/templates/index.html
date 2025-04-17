@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduino Data Stream</title>
+    <script>
+        // Use Server-Sent Events to fetch the current_value from the /stream endpoint
+        const eventSource = new EventSource('/stream');
+        eventSource.onmessage = function(event) {
+            const tempCh1Element = document.getElementById('temp_ch1');
+            if (event.data) {
+                tempCh1Element.innerHTML = `${event.data}&deg;F`;
+            } else {
+                tempCh1Element.innerHTML = '';
+            }
+        };
+    </script>
+</head>
+<body>
+    <h1>Arduino Data Stream</h1>
+    <div>Temperature CH 1: <span id="temp_ch1"></span></div>
+    <div>Temperature CH 2: <span id="temp_ch2"></span></div>
+    <div>Temperature CH 3: <span id="temp_ch3"></span></div>
+</body>
+</html>

@@ -2,9 +2,10 @@ import socket
 import threading
 import json
 import time
+import os
 
 # Config
-ARDUINO_IP = "10.32.3.36"
+ARDUINO_IP = os.getenv("ARDUINO_IP", "10.32.3.36")
 TCP_PORT = 6000
 UDP_PORT = 5000
 BUFFER_SIZE = 1024
@@ -18,8 +19,19 @@ prev_arduino_time = None
 latencies = []
 jitters = []
 
+# Global variable to store data from Arduino UDP stream
+# TODO: rename this variable to something more meaningful
+# TODO: add the rest of the analog inputs
+temp_ch1 = None
+temp_ch2 = None
+temp_ch3 = None
+
 def udp_listener():
-    global prev_receive_time, prev_arduino_time
+    global prev_receive_time
+    global prev_arduino_time
+    global temp_ch1
+    global temp_ch2
+    global temp_ch3
 
     diag_len = 1000
 
@@ -40,6 +52,9 @@ def udp_listener():
 
             arduino_time = float(packet.get("timestamp", 0))
             analog_value = packet.get("value", 0)
+
+            # Update current value
+            temp_ch1 = analog_value
 
             # Sync Arduino and Client clocks using first packet
             if arduino_start_time is None:
@@ -67,7 +82,7 @@ def udp_listener():
             avg_latency = sum(latencies) / len(latencies)
             avg_jitter = sum(jitters) / len(jitters) if jitters else 0
 
-            print(f"[UDP] Value: {analog_value} | Latency: {latency:.1f} ms | Jitter: {jitter:.1f} ms | Avg Latency: {avg_latency:.1f} | Avg Jitter: {avg_jitter:.1f}")
+            # print(f"[UDP] Value: {analog_value} | Latency: {latency:.1f} ms | Jitter: {jitter:.1f} ms | Avg Latency: {avg_latency:.1f} | Avg Jitter: {avg_jitter:.1f}")
 
             # Limit the size of average lists to avoid memory issues
             if len(latencies) > diag_len or len(jitters) > diag_len:

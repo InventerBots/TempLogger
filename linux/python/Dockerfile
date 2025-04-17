@@ -10,7 +10,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the Python script
+COPY main.py .
 COPY basicClient.py .
+COPY templates/ ./templates/
 
-# Command to run the Python script
-CMD ["python", "basicClient.py"]
+EXPOSE 8080 5000 6000
+
+ENV "ARDUINO_IP"="10.32.3.36"
+
+ENTRYPOINT ["python", "main.py"]
