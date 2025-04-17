@@ -22,10 +22,15 @@ def status():
 def stream():
     def generate():
         global temp_ch1
+        global temp_ch2
+        global temp_ch3
+
         while True:
             if temp_ch1 is not None:
                 yield f"data: {round(temp_ch1, 2)}\n\n"
+            if temp_ch2 is not None:
                 yield f"data: {round(temp_ch2, 2)}\n\n"
+            if temp_ch3 is not None:
                 yield f"data: {round(temp_ch3, 2)}\n\n"
             time.sleep(1)
 
@@ -45,10 +50,9 @@ if __name__ == "__main__":
 
     try:
         while True:
-            # global current_value
             temp_ch1 = basicClient.temp_ch1
-            temp_ch2 = basicClient.temp_ch1
-            temp_ch3 = basicClient.temp_ch1
+            temp_ch2 = basicClient.temp_ch2
+            temp_ch3 = basicClient.temp_ch3
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n[TCP] Sending STOP_STREAM...")
