@@ -31,7 +31,7 @@ docker build -t temp-logger .
 After building the image, you can run the container using the following command:
 
 ```
-docker run --rm --network host temp-logger
+docker run --rm --name temp-logger --network host temp-logger
 ```
 
 This will start the Python script, which will connect to the Arduino device and begin listening for UDP packets.
