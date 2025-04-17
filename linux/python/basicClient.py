@@ -76,7 +76,7 @@ def udp_listener():
             avg_latency = sum(latencies) / len(latencies)
             avg_jitter = sum(jitters) / len(jitters) if jitters else 0
 
-            print(f"[UDP] Value: {analog_value} | Latency: {latency:.1f} ms | Jitter: {jitter:.1f} ms | Avg Latency: {avg_latency:.1f} | Avg Jitter: {avg_jitter:.1f}")
+            # print(f"[UDP] Value: {analog_value} | Latency: {latency:.1f} ms | Jitter: {jitter:.1f} ms | Avg Latency: {avg_latency:.1f} | Avg Jitter: {avg_jitter:.1f}")
 
             # Limit the size of average lists to avoid memory issues
             if len(latencies) > diag_len or len(jitters) > diag_len:
