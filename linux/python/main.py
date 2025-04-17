@@ -6,7 +6,9 @@ import basicClient
 
 app = Flask(__name__)
 
-current_value = None
+temp_ch1 = None
+temp_ch2 = None
+temp_ch3 = None
 
 @app.route('/')
 def home():
@@ -19,10 +21,12 @@ def status():
 @app.route('/stream')
 def stream():
     def generate():
-        global current_value
+        global temp_ch1
         while True:
-            if current_value is not None:
-                yield f"data: {round(current_value, 2)}\n\n"
+            if temp_ch1 is not None:
+                yield f"data: {round(temp_ch1, 2)}\n\n"
+                yield f"data: {round(temp_ch2, 2)}\n\n"
+                yield f"data: {round(temp_ch3, 2)}\n\n"
             time.sleep(1)
 
     return Response(generate(), mimetype='text/event-stream')
@@ -42,7 +46,9 @@ if __name__ == "__main__":
     try:
         while True:
             # global current_value
-            current_value = basicClient.current_value
+            temp_ch1 = basicClient.temp_ch1
+            temp_ch2 = basicClient.temp_ch1
+            temp_ch3 = basicClient.temp_ch1
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n[TCP] Sending STOP_STREAM...")
