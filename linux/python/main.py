@@ -22,7 +22,7 @@ def stream():
         global current_value
         while True:
             if current_value is not None:
-                yield f"data: {current_value}\n\n"
+                yield f"data: {round(current_value, 2)}\n\n"
             time.sleep(1)
 
     return Response(generate(), mimetype='text/event-stream')
