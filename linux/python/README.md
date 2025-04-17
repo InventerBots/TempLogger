@@ -24,14 +24,14 @@ TempLogger
 To build the Docker image for the TempLogger project, navigate to the `linux/python` directory and run the following command:
 
 ```
-docker build -t templogger .
+docker build -t temp-logger .
 ```
 
 ### Running the Docker Container
 After building the image, you can run the container using the following command:
 
 ```
-docker run --rm templogger
+docker run --rm --network host temp-logger
 ```
 
 This will start the Python script, which will connect to the Arduino device and begin listening for UDP packets.

@@ -25,7 +25,9 @@ jitters = []
 current_value = None
 
 def udp_listener():
-    global prev_receive_time, prev_arduino_time, current_value
+    global prev_receive_time
+    global prev_arduino_time
+    global current_value
 
     diag_len = 1000
 
