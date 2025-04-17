@@ -19,8 +19,13 @@ prev_arduino_time = None
 latencies = []
 jitters = []
 
+# Global variable to store data from Arduino UDP stream
+# TODO: rename this variable to something more meaningful
+# TODO: add the rest of the analog inputs
+current_value = None
+
 def udp_listener():
-    global prev_receive_time, prev_arduino_time
+    global prev_receive_time, prev_arduino_time, current_value
 
     diag_len = 1000
 
@@ -41,6 +46,9 @@ def udp_listener():
 
             arduino_time = float(packet.get("timestamp", 0))
             analog_value = packet.get("value", 0)
+
+            # Update current value
+            current_value = analog_value
 
             # Sync Arduino and Client clocks using first packet
             if arduino_start_time is None:

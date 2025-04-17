@@ -6,13 +6,26 @@ import basicClient
 
 app = Flask(__name__)
 
+current_value = None
+
 @app.route('/')
 def home():
-    return "Welcome to the Arduino Data Stream!"
+    return render_template('index.html')
 
 @app.route('/status')
 def status():
     return "Server is running!"
+
+@app.route('/stream')
+def stream():
+    def generate():
+        global current_value
+        while True:
+            if current_value is not None:
+                yield f"data: {current_value}\n\n"
+            time.sleep(1)
+
+    return Response(generate(), mimetype='text/event-stream')
 
 def start_flask_server():
     # Run Flask app on a separate thread
@@ -28,6 +41,8 @@ if __name__ == "__main__":
 
     try:
         while True:
+            # global current_value
+            current_value = basicClient.current_value
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n[TCP] Sending STOP_STREAM...")
