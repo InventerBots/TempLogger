@@ -6,7 +6,10 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
+#define AHT20_I2C_ADDRESS 0x38
+
 #define ANALOG_RES 12
+
 #define DISPLAY_RATE 1000
 #define TEMP_POL_RATE 250
 
@@ -23,6 +26,13 @@ uint8_t l3_posX = 0, l3_posY = 30;
 uint8_t l4_posX = 0, l4_posY = 45;
 
 int analogNC = -50;
+
+const uint8_t tempCH0_pin = A0;
+const uint8_t ch0stat_pin = 10;
+const uint8_t tempCH1_pin = A1;
+const uint8_t ch1stat_pin = 11;
+const uint8_t tempCH2_pin = A2;
+const uint8_t ch2stat_pin = 12;
 
 // Static IP setup
 IPAddress localIP(10, 32, 1, 25);
@@ -50,6 +60,15 @@ const unsigned long streamInterval = 20;  // 5ms interval
 
 void setup() {
   analogReadResolution(12);
+
+  pinMode(ch0stat_pin, OUTPUT);
+  pinMode(ch1stat_pin, OUTPUT);
+  pinMode(ch2stat_pin, OUTPUT);
+
+  digitalWrite(ch0stat_pin, LOW);
+  digitalWrite(ch1stat_pin, LOW);
+  digitalWrite(ch2stat_pin, LOW);
+
   // Configure I2C bus
   Wire.setSCL(17);
   Wire.setSDA(16);
@@ -102,18 +121,37 @@ void loop() {
   float temperature, humidity;
 
   String l1_text = "Temp A: ";
-  String l2_text = "RH: ";
+  String l2_text = "AH: ";
   String l3_text = "Temp 1: ";
   String l4_text = "Temp 2: ";
 
-  float tempCH0 = convertTemp_F(analogRead(A0));
-  float tempCH1 = convertTemp_F(analogRead(A1));
-  float tempCH2 = convertTemp_F(analogRead(A2));
+  float tempCH0 = convertTemp_F(analogRead(tempCH0_pin));
+  float tempCH1 = convertTemp_F(analogRead(tempCH1_pin));
+  float tempCH2 = convertTemp_F(analogRead(tempCH2_pin));
 
   unsigned long sysTime = millis();
 
   char jsonPacket[128];
   int packetLen;
+
+  // Set channel staus LEDs based on if a sensor is pressent
+  if (tempCH0 > analogNC) {
+    digitalWrite(ch0stat_pin, HIGH);
+  } else {
+    digitalWrite(ch0stat_pin, LOW);
+  }
+  
+  if (tempCH1 > analogNC) {
+    digitalWrite(ch1stat_pin, HIGH);
+  } else {
+    digitalWrite(ch1stat_pin, LOW);
+  }
+  
+  if (tempCH2 > analogNC) {
+    digitalWrite(ch2stat_pin, HIGH);
+  } else {
+    digitalWrite(ch2stat_pin, LOW);
+  }
 
   // Handle TCP control
   if (!controlClient || !controlClient.connected()) {
@@ -165,6 +203,15 @@ void loop() {
     l4_text+="--.--";
   }
 
+  if(readAHT20(&temperature, &humidity)) {
+    l1_text+=String(temperature*1.8+32)+"F";
+    l2_text+=String(humidity)+"%";
+
+  } else {
+    l1_text+="Error";
+    l2_text+="Error";
+  }
+
   if(sysTime > lastDispTime+DISPLAY_RATE) {
     lastDispTime = sysTime; 
     disp.erase();
@@ -186,4 +233,57 @@ float convertTemp_F(uint16_t AInput) {
   float tempK = 1 / (c1 + c2 * log(R2) + c3 * pow(log(R2), 3));
   return (tempK - 273.15) * 9/5 + 32;
   // return tempK;
+}
+
+bool initializeAHT20() {
+  bool status = false;
+  Wire.beginTransmission(AHT20_I2C_ADDRESS);
+  Wire.write(0xBE); // Initialization command
+  Wire.write(0x08);
+  Wire.write(0x00);
+  if (Wire.endTransmission() == 0) {
+    status = true;
+  } else {
+    status = false;
+  }
+  delay(10);
+  return status;
+}
+
+bool readAHT20(float *temperature, float *humidity) {
+  // Send the measurement command
+  Wire.beginTransmission(AHT20_I2C_ADDRESS);
+  Wire.write(0xAC); // Trigger measurement command
+  Wire.write(0x33);
+  Wire.write(0x00);
+  if (Wire.endTransmission() != 0) {
+    return false; // Error in I2C communication
+  }
+
+  delay(80); // Wait for the measurement to complete
+
+  // Request 6 bytes of data from the sensor
+  Wire.requestFrom(AHT20_I2C_ADDRESS, 6);
+  if (Wire.available() != 6) {
+    return false; // Not enough data received
+  }
+
+  uint8_t data[6];
+  for (int i = 0; i < 6; i++) {
+    data[i] = Wire.read();
+  }
+
+  // Check if the sensor is busy (status bit 7 == 1)
+  if (data[0] & 0x80) {
+    return false;
+  }
+
+  // Convert the raw data to temperature and humidity
+  uint32_t rawHumidity = ((uint32_t)(data[1] & 0xF0) << 12) | ((uint32_t)data[2] << 8) | data[3];
+  uint32_t rawTemperature = ((uint32_t)(data[3] & 0x0F) << 16) | ((uint32_t)data[4] << 8) | data[5];
+
+  *humidity = ((float)rawHumidity / 1048576.0) * 100.0;
+  *temperature = ((float)rawTemperature / 1048576.0) * 200.0 - 50.0;
+
+  return true;
 }
