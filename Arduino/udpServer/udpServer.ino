@@ -1,6 +1,12 @@
 #include <SparkFun_Qwiic_OLED.h>
 #include <res/qw_fnt_8x16.h>
 
+extern "C" {
+  #include "lwip/dhcp.h"
+  #include "lwip/netif.h"
+  #include "lwip/ip_addr.h"
+}
+
 #include <Wire.h>
 #include <string.h>
 #include <WiFi.h>
@@ -45,7 +51,7 @@ String ip_str;
 
 Qwiic1in3OLED disp;
 
-WiFiServer tcpServer(6000);      // TCP control
+WiFiServer tcpServer(6000);
 WiFiClient controlClient;
 WiFiUDP udp;
 const unsigned int udpPort = 5000;
@@ -56,7 +62,7 @@ unsigned int clientUDPPort = udpPort;
 
 char tcpBuffer[64];
 unsigned long lastSendTime = 0;
-const unsigned long streamInterval = 20;  // 5ms interval
+const unsigned long streamInterval = 20; // 20ms interval
 
 void setup() {
   analogReadResolution(12);
@@ -80,11 +86,13 @@ void setup() {
     while(true);
   }
 
+  initializeAHT20();
+
   disp.text(l1_posX, l1_posY, "Connecting to Wifi");
   disp.display();
 
   // Set static IP
-  WiFi.config(localIP, gateway, subnet, dns);
+  // WiFi.config(localIP, gateway, subnet, dns);
 
   // Connect to WiFi
   WiFi.begin(ssid, password);
@@ -92,6 +100,23 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+  }
+
+  struct netif* netif = netif_list;  // should be the only interface
+
+  if (netif != NULL) {
+    dhcp_stop(netif);  // Stop DHCP
+
+    // Set static IP
+    ip4_addr_t ip, gw, mask;
+    ip4addr_aton(localIP.toString().c_str(), &ip);
+    ip4addr_aton(gateway.toString().c_str(), &gw);
+    ip4addr_aton(subnet.toString().c_str(), &mask);
+
+    netif_set_addr(netif, &ip, &mask, &gw);
+    netif_set_up(netif);  // Bring interface back up
+  } else {
+    Serial.println("Failed to get netif");
   }
 
   ip_adr = WiFi.localIP();
