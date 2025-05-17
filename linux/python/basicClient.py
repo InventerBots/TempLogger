@@ -51,10 +51,12 @@ def udp_listener():
             packet = json.loads(message)
 
             arduino_time = float(packet.get("timestamp", 0))
-            analog_value = packet.get("value", 0)
+            temp_ch1 = packet.get("tempCH0", 0)
+            temp_ch2 = packet.get("tempCH1", 0)
+            temp_ch3 = packet.get("tempCH2", 0)
 
             # Update current value
-            temp_ch1 = analog_value
+            # temp_ch1 = analog_value
 
             # Sync Arduino and Client clocks using first packet
             if arduino_start_time is None:
@@ -104,7 +106,8 @@ def main():
     tcp_sock.connect((ARDUINO_IP, TCP_PORT))
     print("[TCP] Connected to", ARDUINO_IP)
 
-    tcp_sock.sendall(b"START_STREAM\n")
+    # tcp_sock.sendall(b"START_STREAM\n")
+    tcp_sock.sendall(b'\x40')
     print("[TCP] Sent START_STREAM")
 
     return tcp_sock
@@ -117,7 +120,8 @@ if __name__ == "__main__":
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n[TCP] Sending STOP_STREAM...")
-        tcp_sock.sendall(b"STOP_STREAM\n")
+        # tcp_sock.sendall(b"STOP_STREAM\n")
+        tcp_sock.sendall(b'\x41')
         tcp_sock.close()
         running = False
         print("[TCP] Connection closed")

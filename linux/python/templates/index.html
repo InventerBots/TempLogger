@@ -9,10 +9,18 @@
         const eventSource = new EventSource('/stream');
         eventSource.onmessage = function(event) {
             const tempCh1Element = document.getElementById('temp_ch1');
+            const tempCh2Element = document.getElementById('temp_ch2');
+            const tempCh3Element = document.getElementById('temp_ch3');
             if (event.data) {
-                tempCh1Element.innerHTML = `${event.data}&deg;F`;
+                const data = JSON.parse(event.data);
+                // Update the temperature values in the HTML
+                tempCh1Element.innerHTML = `${data.tempCh1 !== null ? data.tempCh1 : "N/A"}&deg;F`;
+                tempCh2Element.innerHTML = `${data.tempCh2 !== null ? data.tempCh2 : "N/A"}&deg;F`;
+                tempCh3Element.innerHTML = `${data.tempCh3 !== null ? data.tempCh3 : "N/A"}&deg;F`;
             } else {
                 tempCh1Element.innerHTML = '';
+                tempCh2Element.innerHTML = '';
+                tempCh3Element.innerHTML = '';
             }
         };
     </script>

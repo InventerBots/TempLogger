@@ -1,5 +1,6 @@
 import time
 import threading
+import json
 from flask import Flask, render_template, Response
 
 import basicClient
@@ -29,12 +30,17 @@ def stream():
         global temp_ch3
 
         while True:
-            if temp_ch1 is not None:
-                yield f"data: {round(temp_ch1, 2)}\n\n"
-            if temp_ch2 is not None:
-                yield f"data: {round(temp_ch2, 2)}\n\n"
-            if temp_ch3 is not None:
-                yield f"data: {round(temp_ch3, 2)}\n\n"
+            temp_ch1 = round(temp_ch1, 2) if temp_ch1 is not None else None
+            temp_ch2 = round(temp_ch2, 2) if temp_ch2 is not None else None
+            temp_ch3 = round(temp_ch3, 2) if temp_ch3 is not None else None
+
+            data = {
+                "tempCh1": temp_ch1,
+                "tempCh2": temp_ch2,
+                "tempCh3": temp_ch3
+            }
+            
+            yield f"data: {json.dumps(data)}\n\n"
             time.sleep(1)
 
     return Response(generate(), mimetype='text/event-stream')
