@@ -10,6 +10,9 @@ temp_ch1 = None
 temp_ch2 = None
 temp_ch3 = None
 
+# TODO: temps should use a rolling buffer
+# TODo: add diagnostics to the web interface
+
 @app.route('/')
 def home():
     return render_template('index.html')

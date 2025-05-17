@@ -5,7 +5,7 @@ import time
 import os
 
 # Config
-ARDUINO_IP = os.getenv("ARDUINO_IP", "10.32.3.36")
+ARDUINO_IP = os.getenv("ARDUINO_IP", "10.32.1.25")
 TCP_PORT = 6000
 UDP_PORT = 5000
 BUFFER_SIZE = 1024
