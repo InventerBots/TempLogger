@@ -66,7 +66,7 @@ unsigned int clientUDPPort = udpPort;
 
 char tcpBuffer[64];
 unsigned long lastSendTime = 0;
-const unsigned long streamInterval = 20; // 20ms interval
+unsigned int streamInterval = 20; // 20ms interval
 
 void setup() {
   analogReadResolution(12);
@@ -180,19 +180,20 @@ void loop() {
 
   if (controlClient && controlClient.available()) {
     packetLen = controlClient.readBytesUntil('\n', tcpBuffer, sizeof(tcpBuffer) - 1);
-    // int tcpCmd = controlClient.read();
     tcpBuffer[packetLen] = '\0';
-    Serial.print("[TCP] Command: 0x");
+    Serial.print("[TCP] Command: ");
     Serial.println(tcpBuffer);
 
-    if (strcmp(tcpBuffer, "START_STREAM") == 0) {
-    // if (tcpCmd == 0x40) {
+    if (strncmp(tcpBuffer, "START_STREAM", 12) == 0) {
+      int rpi = atoi(tcpBuffer + 13);
+      streamInterval = (rpi > 0) ? rpi : 20;
       streaming = true;
       clientIP = controlClient.remoteIP();
       clientUDPPort = 5000;
-      Serial.println("Streaming started");
+      Serial.print("Streaming started at: ");
+      Serial.print(streamInterval);
+      Serial.print(" ms\n");
     } else if (strcmp(tcpBuffer, "STOP_STREAM") == 0) {
-    // } else if (tcpCmd == 0x41) {
       streaming = false;
       Serial.println("Streaming stopped");
     }
