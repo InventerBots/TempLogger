@@ -40,6 +40,10 @@ const uint8_t ch1stat_pin = 11;
 const uint8_t tempCH2_pin = A2;
 const uint8_t ch2stat_pin = 12;
 
+float tempCH0;
+float tempCH1;
+float tempCH2;
+
 // Static IP setup
 IPAddress localIP(10, 32, 1, 25);
 IPAddress gateway(10, 32, 0, 1);
@@ -75,6 +79,15 @@ void setup() {
   digitalWrite(ch1stat_pin, LOW);
   digitalWrite(ch2stat_pin, LOW);
 
+  tempCH0 = convertTemp_F(analogRead(tempCH0_pin));
+  tempCH1 = convertTemp_F(analogRead(tempCH1_pin));
+  tempCH2 = convertTemp_F(analogRead(tempCH2_pin));
+
+  // Set channel staus LEDs based on if a sensor is pressent
+  checkInput(tempCH0, analogNC, ch0stat_pin);
+  checkInput(tempCH1, analogNC, ch1stat_pin);
+  checkInput(tempCH2, analogNC, ch2stat_pin);
+
   // Configure I2C bus
   Wire.setSCL(17);
   Wire.setSDA(16);
@@ -88,15 +101,11 @@ void setup() {
 
   initializeAHT20();
 
+  // Connect to WiFi
   disp.text(l1_posX, l1_posY, "Connecting to Wifi");
   disp.display();
-
-  // Set static IP
-  // WiFi.config(localIP, gateway, subnet, dns);
-
-  // Connect to WiFi
-  WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -150,9 +159,9 @@ void loop() {
   String l3_text = "Temp 1: ";
   String l4_text = "Temp 2: ";
 
-  float tempCH0 = convertTemp_F(analogRead(tempCH0_pin));
-  float tempCH1 = convertTemp_F(analogRead(tempCH1_pin));
-  float tempCH2 = convertTemp_F(analogRead(tempCH2_pin));
+  tempCH0 = convertTemp_F(analogRead(tempCH0_pin));
+  tempCH1 = convertTemp_F(analogRead(tempCH1_pin));
+  tempCH2 = convertTemp_F(analogRead(tempCH2_pin));
 
   unsigned long sysTime = millis();
 
@@ -160,23 +169,9 @@ void loop() {
   int packetLen;
 
   // Set channel staus LEDs based on if a sensor is pressent
-  if (tempCH0 > analogNC) {
-    digitalWrite(ch0stat_pin, HIGH);
-  } else {
-    digitalWrite(ch0stat_pin, LOW);
-  }
-  
-  if (tempCH1 > analogNC) {
-    digitalWrite(ch1stat_pin, HIGH);
-  } else {
-    digitalWrite(ch1stat_pin, LOW);
-  }
-  
-  if (tempCH2 > analogNC) {
-    digitalWrite(ch2stat_pin, HIGH);
-  } else {
-    digitalWrite(ch2stat_pin, LOW);
-  }
+  checkInput(tempCH0, analogNC, ch0stat_pin);
+  checkInput(tempCH1, analogNC, ch1stat_pin);
+  checkInput(tempCH2, analogNC, ch2stat_pin);
 
   // Handle TCP control
   if (!controlClient || !controlClient.connected()) {
@@ -185,16 +180,19 @@ void loop() {
 
   if (controlClient && controlClient.available()) {
     packetLen = controlClient.readBytesUntil('\n', tcpBuffer, sizeof(tcpBuffer) - 1);
+    // int tcpCmd = controlClient.read();
     tcpBuffer[packetLen] = '\0';
-    Serial.print("[TCP] Command: ");
+    Serial.print("[TCP] Command: 0x");
     Serial.println(tcpBuffer);
 
     if (strcmp(tcpBuffer, "START_STREAM") == 0) {
+    // if (tcpCmd == 0x40) {
       streaming = true;
       clientIP = controlClient.remoteIP();
       clientUDPPort = 5000;
       Serial.println("Streaming started");
     } else if (strcmp(tcpBuffer, "STOP_STREAM") == 0) {
+    // } else if (tcpCmd == 0x41) {
       streaming = false;
       Serial.println("Streaming stopped");
     }
@@ -204,8 +202,8 @@ void loop() {
   if (streaming) {
     if (sysTime - lastSendTime >= streamInterval) {
       snprintf(jsonPacket, sizeof(jsonPacket),
-        "{\"type\":\"CIP\",\"tag\":\"analogValue\",\"value\":%f,\"timestamp\":%lu}",
-        tempCH0, sysTime);
+        "{\"tempCH0\":%f, \"tempCH1\":%f, \"tempCH2\":%f, \"timestamp\":%lu}",
+        tempCH0,tempCH1, tempCH2, sysTime);
 
       udp.beginPacket(clientIP, clientUDPPort);
       udp.write(jsonPacket);
@@ -247,6 +245,14 @@ void loop() {
     disp.text(l4_posX, l4_posY, l4_text);
     disp.display();
   }      
+}
+
+void checkInput(float input, float cutoff, uint8_t statusPin) {
+  if (input > cutoff) {
+    digitalWrite(statusPin, HIGH);
+  } else {
+    digitalWrite(statusPin, LOW);
+  }
 }
 
 float convertTemp_F(uint16_t AInput) {
