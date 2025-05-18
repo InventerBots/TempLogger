@@ -9,6 +9,7 @@ ARDUINO_IP = os.getenv("ARDUINO_IP", "10.32.1.25")
 TCP_PORT = 6000
 UDP_PORT = 5000
 BUFFER_SIZE = 1024
+RPI = 100
 
 # Control flags
 running = True
@@ -94,22 +95,40 @@ def udp_listener():
         except Exception as e:
             print("[UDP] Error:", e)
 
-def main():
+def main(rpi=RPI):
     global running
 
     # Start listener thread
     listener_thread = threading.Thread(target=udp_listener, daemon=True)
     listener_thread.start()
+    tcp_sock = startStream(rpi)
 
-    # Connect TCP
+    return tcp_sock
+
+def startStream(rpi):
+    global running
+
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_sock.connect((ARDUINO_IP, TCP_PORT))
     print("[TCP] Connected to", ARDUINO_IP)
+    cmd = f"START_STREAM {rpi}\n"
+    tcp_sock.sendall(cmd.encode())
+    print(f"[TCP] Sent {cmd}")
+    running = True
 
-    tcp_sock.sendall(b"START_STREAM\n")
-    # tcp_sock.sendall(b'\x40')
-    print("[TCP] Sent START_STREAM")
+    return tcp_sock
 
+def stopStream():
+    global running
+
+    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp_sock.connect((ARDUINO_IP, TCP_PORT))
+    print("[TCP] Sending STOP_STREAM...")
+    tcp_sock.sendall(b"STOP_STREAM\n")
+    tcp_sock.close()
+    print("[TCP] Connection closed")
+    running = False
+    
     return tcp_sock
 
 if __name__ == "__main__":
@@ -119,9 +138,5 @@ if __name__ == "__main__":
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        # print("\n[TCP] Sending STOP_STREAM...")
-        tcp_sock.sendall(b"STOP_STREAM\n")
-        tcp_sock.sendall(b'\x41')
-        tcp_sock.close()
-        running = False
+        stopStream()
         print("[TCP] Connection closed")
