@@ -71,8 +71,5 @@ if __name__ == "__main__":
             temp_ch3 = basicClient.temp_ch3
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\n[TCP] Sending STOP_STREAM...")
-        tcp_sock.sendall(b"STOP_STREAM\n")
-        tcp_sock.close()
-        running = False
+        basicClient.stopStream()
         print("[TCP] Connection closed")
