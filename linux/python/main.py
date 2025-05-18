@@ -83,8 +83,8 @@ if __name__ == "__main__":
     flask_thread = threading.Thread(target=start_flask_server, daemon=True)
     flask_thread.start()
 
-    # Start the basic client
-    tcp_sock = basicClient.main()
+    # Start the basic client rpi = 20ms
+    tcp_sock = basicClient.main(20)
 
     try:
         while True:

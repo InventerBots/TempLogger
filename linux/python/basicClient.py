@@ -9,6 +9,7 @@ ARDUINO_IP = os.getenv("ARDUINO_IP", "10.32.1.25")
 TCP_PORT = 6000
 UDP_PORT = 5000
 BUFFER_SIZE = 1024
+RPI = 100
 
 # Control flags
 running = True
@@ -94,24 +95,25 @@ def udp_listener():
         except Exception as e:
             print("[UDP] Error:", e)
 
-def main():
+def main(rpi=RPI):
     global running
 
     # Start listener thread
     listener_thread = threading.Thread(target=udp_listener, daemon=True)
     listener_thread.start()
-    tcp_sock = startStream()
+    tcp_sock = startStream(rpi)
 
     return tcp_sock
 
-def startStream():
+def startStream(rpi):
     global running
 
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_sock.connect((ARDUINO_IP, TCP_PORT))
     print("[TCP] Connected to", ARDUINO_IP)
-    tcp_sock.sendall(b"START_STREAM\n")
-    print("[TCP] Sent START_STREAM")
+    cmd = f"START_STREAM {rpi}\n"
+    tcp_sock.sendall(cmd.encode())
+    print(f"[TCP] Sent {cmd}")
     running = True
 
     return tcp_sock
