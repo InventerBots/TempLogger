@@ -1,11 +1,19 @@
 import time
 import threading
 import json
+import os
+import psycopg2
 from flask import Flask, render_template, Response
 
 import basicClient
 
 app = Flask(__name__)
+
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", 5432)
+DB_NAME = os.getenv("DB_NAME", "templogger")
+DB_USER = os.getenv("DB_USER", "templogger")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
 temp_ch1 = None
 temp_ch2 = None
@@ -55,6 +63,20 @@ def stream():
 def start_flask_server():
     # Run Flask app on a separate thread
     app.run(host='0.0.0.0', port=8080, debug=False)
+
+def getDBConnection():
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+        return conn
+    except Exception as e:
+        print(f"Error connecting to database: {e}")
+        return None
 
 if __name__ == "__main__":
     # Start Flask server in a separate thread
