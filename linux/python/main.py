@@ -10,6 +10,7 @@ app = Flask(__name__)
 temp_ch1 = None
 temp_ch2 = None
 temp_ch3 = None
+stream_delay = 1  # Default delay in seconds
 
 # TODO: temps should use a rolling buffer
 # TODo: add diagnostics to the web interface
@@ -21,6 +22,12 @@ def home():
 @app.route('/status')
 def status():
     return "Server is running!"
+
+@app.route('/set_delay/<int:delay>')
+def set_delay(delay):
+    global stream_delay
+    stream_delay = max(0.1, delay)  # Ensure a minimum delay of 0.1 seconds
+    return f"Stream delay set to {stream_delay} seconds"
 
 @app.route('/stream')
 def stream():
@@ -41,7 +48,7 @@ def stream():
             }
             
             yield f"data: {json.dumps(data)}\n\n"
-            time.sleep(1)
+            time.sleep(stream_delay)
 
     return Response(generate(), mimetype='text/event-stream')
 
