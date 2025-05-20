@@ -69,25 +69,6 @@ unsigned long lastSendTime = 0;
 unsigned int streamInterval = 20; // 20ms interval
 
 void setup() {
-  analogReadResolution(12);
-
-  pinMode(ch0stat_pin, OUTPUT);
-  pinMode(ch1stat_pin, OUTPUT);
-  pinMode(ch2stat_pin, OUTPUT);
-
-  digitalWrite(ch0stat_pin, LOW);
-  digitalWrite(ch1stat_pin, LOW);
-  digitalWrite(ch2stat_pin, LOW);
-
-  tempCH0 = convertTemp_F(analogRead(tempCH0_pin));
-  tempCH1 = convertTemp_F(analogRead(tempCH1_pin));
-  tempCH2 = convertTemp_F(analogRead(tempCH2_pin));
-
-  // Set channel staus LEDs based on if a sensor is pressent
-  checkInput(tempCH0, analogNC, ch0stat_pin);
-  checkInput(tempCH1, analogNC, ch1stat_pin);
-  checkInput(tempCH2, analogNC, ch2stat_pin);
-
   // Configure I2C bus
   Wire.setSCL(17);
   Wire.setSDA(16);
@@ -99,9 +80,38 @@ void setup() {
     while(true);
   }
 
+  disp.erase();
+  disp.text(l1_posX, l1_posY, "Display test");
+  disp.display();
+  delay(1000);
+
+  analogReadResolution(12);
+
+  pinMode(ch0stat_pin, OUTPUT);
+  pinMode(ch1stat_pin, OUTPUT);
+  pinMode(ch2stat_pin, OUTPUT);
+
+  // Test outputs
+  disp.erase();
+  disp.text(l1_posX, l1_posY, "IO test");
+  disp.display();
+
+  digitalWrite(ch0stat_pin, HIGH);
+  digitalWrite(ch1stat_pin, HIGH);
+  digitalWrite(ch2stat_pin, HIGH);
+  
+  delay(500);
+ 
+  digitalWrite(ch0stat_pin, LOW);
+  digitalWrite(ch1stat_pin, LOW);
+  digitalWrite(ch2stat_pin, LOW);
+
+  delay(500);
+
   initializeAHT20();
 
   // Connect to WiFi
+  disp.erase();
   disp.text(l1_posX, l1_posY, "Connecting to Wifi");
   disp.display();
   Serial.print("Connecting to WiFi");
