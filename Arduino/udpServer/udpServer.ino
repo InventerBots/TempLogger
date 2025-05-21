@@ -8,9 +8,12 @@ extern "C" {
 }
 
 #include <Wire.h>
+#include <SPI.h>
 #include <string.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
+#include <SD.h>
+#include <ArduinoJson.h>
 
 #define AHT20_I2C_ADDRESS 0x38
 
@@ -33,12 +36,25 @@ uint8_t l4_posX = 0, l4_posY = 45;
 
 int analogNC = -50;
 
+// Define analog input pins
 const uint8_t tempCH0_pin = A0;
-const uint8_t ch0stat_pin = 10;
 const uint8_t tempCH1_pin = A1;
-const uint8_t ch1stat_pin = 11;
 const uint8_t tempCH2_pin = A2;
+
+// Define digital output pins
+const uint8_t ch0stat_pin = 10;
+const uint8_t ch1stat_pin = 11;
 const uint8_t ch2stat_pin = 12;
+
+// Define SD card SPI bus pins
+const uint8_t SD_MISO = 4;
+const uint8_t SD_MOSI = 3;
+const uint8_t SD_CS = 5;
+const uint8_t SD_SCK = 2;
+
+// Define I2C bus pins
+const uint8_t I2C_SCL = 17;
+const uint8_t I2C_SDA = 16;
 
 float tempCH0;
 float tempCH1;
@@ -50,40 +66,89 @@ IPAddress gateway(10, 32, 0, 1);
 IPAddress subnet(255, 255, 252, 0);
 IPAddress dns(8, 8, 8, 8);
 
-IPAddress ip_adr;
-String ip_str;
-
-Qwiic1in3OLED disp;
-
-WiFiServer tcpServer(6000);
-WiFiClient controlClient;
-WiFiUDP udp;
 const unsigned int udpPort = 5000;
+const unsigned int tcpPort = 6000;
+unsigned int clientUDPPort = udpPort;
 
 bool streaming = false;
-IPAddress clientIP;
-unsigned int clientUDPPort = udpPort;
+bool sdInit = false;
+bool i2cInit = false;
 
 char tcpBuffer[64];
 unsigned long lastSendTime = 0;
 unsigned int streamInterval = 20; // 20ms interval
 
+Qwiic1in3OLED disp;
+
+IPAddress ip_adr;
+IPAddress clientIP;
+String ip_str;
+
+WiFiServer tcpServer(tcpPort);
+WiFiClient controlClient;
+WiFiUDP udp;
+
+String configPath = "/config.json";
+File configFile;
+JsonDocument configFileObj;
+struct Config {
+  char hostname[64];
+  int  tcpPort;
+  int  udpPort;
+  IPAddress ip;
+  IPAddress subnet;
+  IPAddress gateway;
+  IPAddress dns;
+};
+Config config;
+
 void setup() {
-  // Configure I2C bus
-  Wire.setSCL(17);
-  Wire.setSDA(16);
-  Wire.begin();
-
   Serial.begin(115200);
+  delay(1000);
 
+  // Configure I2C bus
+  Wire.setSCL(I2C_SCL);
+  Wire.setSDA(I2C_SDA);
+  Wire.begin();
   if(!disp.begin()) {
     while(true);
   }
 
+  // Verify that the display is working
   disp.erase();
   disp.text(l1_posX, l1_posY, "Display test");
   disp.display();
-  delay(1000);
+  delay(500);
+
+  // Configure SPI bus for SD card
+  SPI.setRX(SD_MISO);
+  SPI.setTX(SD_MOSI);
+  SPI.setSCK(SD_SCK);
+  disp.erase();
+  disp.text(l1_posX, l1_posY, "SD card init");
+  disp.display();
+  sdInit = SD.begin(SD_CS);
+
+  // Check if the SD card initialized correctly
+  if(sdInit) {
+    disp.text(l2_posX, l2_posY, "complete");
+    configFile = SD.open(configPath);
+    if(configFile) {
+      disp.text(l3_posX, l3_posY, "found config file");
+      DeserializationError configError = deserializeJson(configFileObj, configFile);
+      
+      config.ip.fromString(configFileObj["ip"].as<const char*>());
+      config.subnet.fromString(configFileObj["subnet_mask"].as<const char*>());
+      config.gateway.fromString(configFileObj["gateway"].as<const char*>());
+      config.dns.fromString(configFileObj["dns"][0].as<const char*>());
+      configFile.close();
+    }
+    disp.display();
+  } else {
+    disp.text(l2_posX, l2_posY, "failed");
+    disp.display();
+  }
+  delay(500);
 
   analogReadResolution(12);
 
@@ -123,14 +188,15 @@ void setup() {
 
   struct netif* netif = netif_list;  // should be the only interface
 
-  if (netif != NULL) {
+  if (netif != NULL and sdInit) {
     dhcp_stop(netif);  // Stop DHCP
 
     // Set static IP
     ip4_addr_t ip, gw, mask;
-    ip4addr_aton(localIP.toString().c_str(), &ip);
-    ip4addr_aton(gateway.toString().c_str(), &gw);
-    ip4addr_aton(subnet.toString().c_str(), &mask);
+
+    ip4addr_aton(config.ip.toString().c_str(), &ip);
+    ip4addr_aton(config.gateway.toString().c_str(), &gw);
+    ip4addr_aton(config.subnet.toString().c_str(), &mask);
 
     netif_set_addr(netif, &ip, &mask, &gw);
     netif_set_up(netif);  // Bring interface back up
