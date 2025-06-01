@@ -93,6 +93,8 @@ File configFile;
 JsonDocument configFileObj;
 struct Config {
   char hostname[64];
+  char ssid[32];
+  char ssidPass[32];
   int  tcpPort;
   int  udpPort;
   IPAddress ip;
@@ -137,6 +139,8 @@ void setup() {
       disp.text(l3_posX, l3_posY, "found config file");
       DeserializationError configError = deserializeJson(configFileObj, configFile);
       
+      config.ssid.formString(configFileObj["ssid"].as<const char*>());
+      config.ssidPass.formString(configFileObj["password"].as<const char*>());
       config.ip.fromString(configFileObj["ip"].as<const char*>());
       config.subnet.fromString(configFileObj["subnet_mask"].as<const char*>());
       config.gateway.fromString(configFileObj["gateway"].as<const char*>());
