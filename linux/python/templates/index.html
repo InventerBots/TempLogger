@@ -1,26 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arduino Data Stream</title>
-    <script>
-        // Use Server-Sent Events to fetch the current_value from the /stream endpoint
-        const eventSource = new EventSource('/stream');
-        eventSource.onmessage = function(event) {
-            const tempCh1Element = document.getElementById('temp_ch1');
-            if (event.data) {
-                tempCh1Element.innerHTML = `${event.data}&deg;F`;
-            } else {
-                tempCh1Element.innerHTML = '';
-            }
-        };
-    </script>
+    <link rel="stylesheet" href="/static/stylesheet.css">
+    <script src="/static/tempData.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
 </head>
+
 <body>
     <h1>Arduino Data Stream</h1>
-    <div>Temperature CH 1: <span id="temp_ch1"></span></div>
-    <div>Temperature CH 2: <span id="temp_ch2"></span></div>
-    <div>Temperature CH 3: <span id="temp_ch3"></span></div>
+    <div>
+        <div class="tempDisplay">
+            <p class="tempLabel"> Temperature 1: </p>
+            <div style="display: flex; flex-direction: row;">
+                <div id="temp_ch1" class="tempValue"></div>
+                <span id="tempCh1Sparkline" class="tempSparkline"></span>
+            </div>
+        </div>
+        <div class="tempDisplay">
+            <p class="tempLabel"> Temperature 2: </p>
+            <div style="display: flex; flex-direction: row;">
+                <div id="temp_ch2" class="tempValue"></div>
+                <span id="tempCh2Sparkline" class="tempSparkline"></span>
+            </div>
+        </div>
+        <div class="tempDisplay">
+            <p class="tempLabel"> Temperature 3: </p>
+            <div style="display: flex; flex-direction: row;">
+                <div id="temp_ch3" class="tempValue"></div>
+                <span id="tempCh3Sparkline" class="tempSparkline"></span>
+            </div>
+        </div>
+    </div>
 </body>
+
 </html>

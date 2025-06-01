@@ -14,8 +14,8 @@ COPY main.py .
 COPY basicClient.py .
 COPY templates/ ./templates/
 
-EXPOSE 8080 5000 6000
+# EXPOSE 8080 5000 6000
 
-ENV "ARDUINO_IP"="10.32.3.36"
+# ENV "ARDUINO_IP"="10.32.1.25"
 
 ENTRYPOINT ["python", "main.py"]

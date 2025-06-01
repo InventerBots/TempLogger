@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    image: temp-logger:latest
+    container_name: temp_logger
+    restart: always
+
+    build:
+      context: ./linux/python
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "6000:6000"
+      - "5000:5000"
+    volumes:
+      - .:/linux/python
+    environment:
+      - ARDUINO_IP=10.32.3.36
+      - DEBUG=true
+    networks:
+      - app-network
+    tty: true
+    stdin_open: true
+    init: true
+
+networks:
+  app-network:
+    driver: bridge
