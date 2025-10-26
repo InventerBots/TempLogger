@@ -22,9 +22,6 @@ extern "C" {
 #define DISPLAY_RATE 1000
 #define TEMP_POL_RATE 250
 
-const char* ssid     = "Foe-Glass wifi";
-const char* password = "Wizard_4 wand";
-
 unsigned long sysTime;
 unsigned long lastDispTime;
 unsigned long lastPolTime;
@@ -60,12 +57,6 @@ float tempCH0;
 float tempCH1;
 float tempCH2;
 
-// Static IP setup
-IPAddress localIP(10, 32, 1, 25);
-IPAddress gateway(10, 32, 0, 1);
-IPAddress subnet(255, 255, 252, 0);
-IPAddress dns(8, 8, 8, 8);
-
 const unsigned int udpPort = 5000;
 const unsigned int tcpPort = 6000;
 unsigned int clientUDPPort = udpPort;
@@ -93,8 +84,8 @@ File configFile;
 JsonDocument configFileObj;
 struct Config {
   char hostname[64];
-  char ssid[32];
-  char ssidPass[32];
+  const char* ssid;
+  const char* ssidPass;
   int  tcpPort;
   int  udpPort;
   IPAddress ip;
@@ -139,8 +130,9 @@ void setup() {
       disp.text(l3_posX, l3_posY, "found config file");
       DeserializationError configError = deserializeJson(configFileObj, configFile);
       
-      config.ssid.formString(configFileObj["ssid"].as<const char*>());
-      config.ssidPass.formString(configFileObj["password"].as<const char*>());
+      config.ssid = configFileObj["ssid"].as<const char*>();
+      config.ssidPass = configFileObj["password"].as<const char*>();
+
       config.ip.fromString(configFileObj["ip"].as<const char*>());
       config.subnet.fromString(configFileObj["subnet_mask"].as<const char*>());
       config.gateway.fromString(configFileObj["gateway"].as<const char*>());
@@ -181,10 +173,11 @@ void setup() {
 
   // Connect to WiFi
   disp.erase();
-  disp.text(l1_posX, l1_posY, "Connecting to Wifi");
+  disp.text(l1_posX, l1_posY, "Connecting to:");
+  disp.text(l2_posX, l2_posY, config.ssid);
   disp.display();
   Serial.print("Connecting to WiFi");
-  WiFi.begin(ssid, password);
+  WiFi.begin(config.ssid, config.ssidPass);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -249,9 +242,9 @@ void loop() {
   int packetLen;
 
   // Set channel staus LEDs based on if a sensor is pressent
-  checkInput(tempCH0, analogNC, ch0stat_pin);
-  checkInput(tempCH1, analogNC, ch1stat_pin);
-  checkInput(tempCH2, analogNC, ch2stat_pin);
+  bool tempCH0OK = checkInput(tempCH0, analogNC, ch0stat_pin);
+  bool tempCH1OK = checkInput(tempCH1, analogNC, ch1stat_pin);
+  bool tempCH2OK = checkInput(tempCH2, analogNC, ch2stat_pin);
 
   // Handle TCP control
   if (!controlClient || !controlClient.connected()) {
@@ -283,8 +276,11 @@ void loop() {
   if (streaming) {
     if (sysTime - lastSendTime >= streamInterval) {
       snprintf(jsonPacket, sizeof(jsonPacket),
-        "{\"tempCH0\":%f, \"tempCH1\":%f, \"tempCH2\":%f, \"timestamp\":%lu}",
-        tempCH0,tempCH1, tempCH2, sysTime);
+        "{\"tempCH0\":%f, \"tempCH1\":%f, \"tempCH2\":%f, \"statCH0\":%d, \"statCH1\":%d, \"statCH2\":%d, \"timestamp\":%lu}",
+        tempCH0, tempCH1, tempCH2,
+        tempCH0OK, tempCH1OK, tempCH2OK,
+        sysTime);
+      //, \"tempCH0OK\":%f, \"tempCH1OK\":%f, \"tempCH2OK\":%f
 
       udp.beginPacket(clientIP, clientUDPPort);
       udp.write(jsonPacket);
@@ -328,12 +324,16 @@ void loop() {
   }      
 }
 
-void checkInput(float input, float cutoff, uint8_t statusPin) {
+bool checkInput(float input, float cutoff, uint8_t statusPin) {
+  bool stat = false;
   if (input > cutoff) {
     digitalWrite(statusPin, HIGH);
+    stat = true;
   } else {
     digitalWrite(statusPin, LOW);
+    stat = false;
   }
+  return stat;
 }
 
 float convertTemp_F(uint16_t AInput) {
